@@ -1,61 +1,68 @@
-const express = require('express');
-const Discord = require('discord.js');
+require("dotenv").config();
+const express = require("express");
+const { Client, GatewayIntentBits, Partials, EmbedBuilder } = require("discord.js");
+
+// تشغيل سيرفر صغير لمنع تعطّل البوت (خاص بالهوستينج مثل Replit)
 const app = express();
-const client = new Discord.Client({ intents: [Discord.GatewayIntentBits.Guilds] });
-
-// ... (بقية الكود كما هو مع إزالة أي إشارات لـ canvas أو حزم أخرى غير مستخدمة)
-// إعدادات السيرفر
 const PORT = process.env.PORT || 3000;
-app.use(express.json());
+app.get("/", (req, res) => res.sendStatus(200));
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
 
-// إندبوينتات الصحة
-app.get('/', (req, res) => res.sendStatus(200));
-app.get('/ping', (req, res) => res.send(new Date().toString()));
+// إنشاء عميل ديسكورد مع التفعيل الكامل للأوامر
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers
+  ],
+  partials: [Partials.Channel]
+});
 
-// تشغيل السيرفر
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-// إعدادات البوت
+// إعدادات عامة
 const prefix = "-";
 const dev = process.env.DEV_ID || "966461149782626324";
 const dv = process.env.DEV_NAME || "_2ca";
 
-// حدث التشغيل
-client.on('ready', () => {
-  client.user.setActivity(`افضل بوت برودكاست`);
+// عند تشغيل البوت
+client.once("ready", () => {
+  client.user.setActivity("🔹 أفضل بوت برودكاست 🔹");
   console.log(`
-    Bot Name: ${client.user.tag}
-    Bot ID: ${client.user.id}
-    Developer: ${dv} (${dev})
-    Prefix: ${prefix}
+    ✅ Bot Online
+    🤖 Name: ${client.user.tag}
+    🆔 ID: ${client.user.id}
+    👨‍💻 Developer: ${dv} (${dev})
+    🔹 Prefix: ${prefix}
   `);
 });
 
-// نظام الأوامر
-client.on('messageCreate', async message => {
+// أوامر البوت
+client.on("messageCreate", async (message) => {
   if (!message.guild || message.author.bot) return;
 
   // أمر المساعدة
   if (message.content.startsWith(prefix + "help")) {
-    if (!message.member.permissions.has('ADMINISTRATOR')) {
-      return message.reply('🚫 لا تملك الصلاحيات المطلوبة');
+    if (!message.member.permissions.has("Administrator")) {
+      return message.reply("🚫 لا تملك الصلاحيات المطلوبة");
     }
 
-    const embed = new Discord.MessageEmbed()
-      .setTitle('قائمة الأوامر')
-      .setColor('#0099ff')
-      .addField(`${prefix}help`, 'عرض القائمة الحالية')
-      .addField(`${prefix}bc [رسالة]`, 'بث عام لجميع الأعضاء')
-      .addField(`${prefix}ebc [رسالة]`, 'بث مدمج مع إيمبد')
-      .addField(`${prefix}online-bc [رسالة]`, 'بث للأعضاء النشطين فقط')
-      .addField(`${prefix}ping`, 'فحص سرعة البوت');
+    const embed = new EmbedBuilder()
+      .setTitle("📜 قائمة الأوامر")
+      .setColor("#0099ff")
+      .addFields(
+        { name: `${prefix}help`, value: "عرض القائمة الحالية" },
+        { name: `${prefix}bc [رسالة]`, value: "📢 بث عام لجميع الأعضاء" },
+        { name: `${prefix}ebc [رسالة]`, value: "📢 بث مع Embed" },
+        { name: `${prefix}online-bc [رسالة]`, value: "📢 بث للأعضاء النشطين فقط" },
+        { name: `${prefix}ping`, value: "⚡ فحص سرعة البوت" }
+      );
 
     return message.channel.send({ embeds: [embed] });
   }
 
   // أمر البث العادي
   if (message.content.startsWith(prefix + "bc")) {
-    handleBroadcast(message, 'all');
+    handleBroadcast(message, "all");
   }
 
   // أمر البث المدمج
@@ -65,7 +72,7 @@ client.on('messageCreate', async message => {
 
   // أمر البث للنشطين
   if (message.content.startsWith(prefix + "online-bc")) {
-    handleBroadcast(message, 'online');
+    handleBroadcast(message, "online");
   }
 
   // أمر البنغ
@@ -75,85 +82,84 @@ client.on('messageCreate', async message => {
   }
 });
 
-// دوال مساعدة
+// 📢 دالة البث العادي
 async function handleBroadcast(message, type) {
-  if (!message.member.permissions.has('ADMINISTRATOR')) {
-    return message.reply('🚫 لا تملك الصلاحيات المطلوبة');
+  if (!message.member.permissions.has("Administrator")) {
+    return message.reply("🚫 لا تملك الصلاحيات المطلوبة");
   }
 
-  const args = message.content.split(' ').slice(1).join(' ');
-  if (!args) return message.reply('يرجى كتابة الرسالة المراد بثها');
+  const args = message.content.split(" ").slice(1).join(" ");
+  if (!args) return message.reply("✉️ يرجى كتابة الرسالة المراد بثها");
 
   const confirmMsg = await message.channel.send(`هل تريد تأكيد البث؟\n\`${args}\``);
-  await confirmMsg.react('✅');
-  await confirmMsg.react('❌');
+  await confirmMsg.react("✅");
+  await confirmMsg.react("❌");
 
-  const filter = (reaction, user) => 
-    ['✅', '❌'].includes(reaction.emoji.name) && user.id === message.author.id;
-  
+  const filter = (reaction, user) => ["✅", "❌"].includes(reaction.emoji.name) && user.id === message.author.id;
   const collector = confirmMsg.createReactionCollector({ filter, time: 60000 });
 
-  collector.on('collect', async (reaction) => {
-    if (reaction.emoji.name === '✅') {
+  collector.on("collect", async (reaction) => {
+    if (reaction.emoji.name === "✅") {
       let members;
-      if (type === 'online') {
-        members = message.guild.members.cache.filter(m => m.presence?.status !== 'offline');
+      if (type === "online") {
+        members = message.guild.members.cache.filter((m) => m.presence?.status !== "offline");
       } else {
         members = message.guild.members.cache;
       }
 
-      members.forEach(member => {
-        if (member.user.bot) return;
-        member.send(args).catch(console.error);
+      members.forEach((member) => {
+        if (!member.user.bot) {
+          member.send(args).catch(console.error);
+        }
       });
 
       message.channel.send(`✅ تم البث بنجاح إلى ${members.size} عضو`);
     } else {
-      message.channel.send('❌ تم إلغاء البث');
+      message.channel.send("❌ تم إلغاء البث");
     }
     confirmMsg.delete();
     collector.stop();
   });
 }
 
+// 📢 دالة البث المدمج
 async function handleEmbedBroadcast(message) {
-  if (!message.member.permissions.has('ADMINISTRATOR')) {
-    return message.reply('🚫 لا تملك الصلاحيات المطلوبة');
+  if (!message.member.permissions.has("Administrator")) {
+    return message.reply("🚫 لا تملك الصلاحيات المطلوبة");
   }
 
-  const args = message.content.split(' ').slice(1).join(' ');
-  if (!args) return message.reply('يرجى كتابة الرسالة المراد بثها');
+  const args = message.content.split(" ").slice(1).join(" ");
+  if (!args) return message.reply("✉️ يرجى كتابة الرسالة المراد بثها");
 
   const confirmMsg = await message.channel.send(`هل تريد تأكيد البث المدمج؟\n\`${args}\``);
-  await confirmMsg.react('✅');
-  await confirmMsg.react('❌');
+  await confirmMsg.react("✅");
+  await confirmMsg.react("❌");
 
-  const filter = (reaction, user) => 
-    ['✅', '❌'].includes(reaction.emoji.name) && user.id === message.author.id;
-  
+  const filter = (reaction, user) => ["✅", "❌"].includes(reaction.emoji.name) && user.id === message.author.id;
   const collector = confirmMsg.createReactionCollector({ filter, time: 60000 });
 
-  collector.on('collect', async (reaction) => {
-    if (reaction.emoji.name === '✅') {
-      const embed = new Discord.MessageEmbed()
-        .setTitle('إشعار عام')
+  collector.on("collect", async (reaction) => {
+    if (reaction.emoji.name === "✅") {
+      const embed = new EmbedBuilder()
+        .setTitle("🔹 إشعار عام 🔹")
         .setDescription(args)
-        .setColor('#0099ff')
+        .setColor("#0099ff")
         .setTimestamp();
 
-      message.guild.members.cache.forEach(member => {
-        if (member.user.bot) return;
-        member.send({ embeds: [embed] }).catch(console.error);
+      message.guild.members.cache.forEach((member) => {
+        if (!member.user.bot) {
+          member.send({ embeds: [embed] }).catch(console.error);
+        }
       });
 
       message.channel.send(`✅ تم البث المدمج بنجاح إلى ${message.guild.memberCount} عضو`);
     } else {
-      message.channel.send('❌ تم إلغاء البث');
+      message.channel.send("❌ تم إلغاء البث");
     }
     confirmMsg.delete();
     collector.stop();
   });
 }
 
-// تسجيل الدخول
+// 📌 تسجيل الدخول باستخدام التوكن
 client.login(process.env.TOKEN);
