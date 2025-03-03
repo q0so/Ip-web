@@ -1,9 +1,9 @@
-// index.js
 const express = require('express');
 const Discord = require('discord.js');
 const app = express();
-const client = new Discord.Client();
+const client = new Discord.Client({ intents: [Discord.GatewayIntentBits.Guilds] });
 
+// ... (بقية الكود كما هو مع إزالة أي إشارات لـ canvas أو حزم أخرى غير مستخدمة)
 // إعدادات السيرفر
 const PORT = process.env.PORT || 3000;
 app.use(express.json());
