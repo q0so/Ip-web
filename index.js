@@ -17,8 +17,8 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // إعدادات البوت
 const prefix = "-";
-const dev = process.env.DEV_ID || "YOUR_ID";
-const dv = process.env.DEV_NAME || "YOUR_NAME";
+const dev = process.env.DEV_ID || "966461149782626324";
+const dv = process.env.DEV_NAME || "_2ca";
 
 // حدث التشغيل
 client.on('ready', () => {
